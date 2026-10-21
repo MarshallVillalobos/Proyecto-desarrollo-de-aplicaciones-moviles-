@@ -44,7 +44,6 @@ fun MisEstudiosScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("6. Pantalla Mis Estudios (Base)", color = TextMain)
-            Text("Usa el ícono arriba a la derecha para ir a Perfil", color = TextMuted)
         }
     }
 }
