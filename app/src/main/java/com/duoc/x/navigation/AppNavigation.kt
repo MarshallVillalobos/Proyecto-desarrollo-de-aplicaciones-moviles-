@@ -1,16 +1,19 @@
 package com.duoc.x.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.duoc.x.ui.screens.*
+import com.duoc.x.viewmodel.EstudioViewModel
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val estudioViewModel: EstudioViewModel = viewModel()
 
     NavHost(
         navController = navController,
@@ -30,6 +33,7 @@ fun AppNavigation() {
         // 2. Pantalla Normas
         composable(route = Screen.Normas.route) {
             NormasScreen(
+                viewModel = estudioViewModel,
                 onNormaClick = { normaNombre ->
                     navController.navigate(Screen.Articulos.createRoute(normaNombre))
                 },
@@ -49,9 +53,10 @@ fun AppNavigation() {
             route = Screen.Articulos.route,
             arguments = listOf(navArgument("normaNombre") { type = NavType.StringType })
         ) { backStackEntry ->
-            val normaNombre = backStackEntry.arguments?.getString("normaNombre") ?: "Norma"
+            val normaNombre = backStackEntry.arguments?.getString("normaNombre") ?: "Código del Trabajo"
             ArticulosScreen(
                 normaNombre = normaNombre,
+                viewModel = estudioViewModel,
                 onArticuloClick = { articuloNumero ->
                     navController.navigate(Screen.Lectura.createRoute(normaNombre, articuloNumero))
                 },
@@ -79,11 +84,12 @@ fun AppNavigation() {
                 navArgument("articuloNumero") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val normaNombre = backStackEntry.arguments?.getString("normaNombre") ?: "Norma"
+            val normaNombre = backStackEntry.arguments?.getString("normaNombre") ?: "Código del Trabajo"
             val articuloNumero = backStackEntry.arguments?.getString("articuloNumero") ?: "Art. 1"
             LecturaScreen(
                 normaNombre = normaNombre,
                 articuloNumero = articuloNumero,
+                viewModel = estudioViewModel,
                 onAgregarNotaClick = {
                     navController.navigate(Screen.NuevaNota.createRoute(normaNombre, articuloNumero))
                 },
@@ -110,7 +116,7 @@ fun AppNavigation() {
                 navArgument("articuloNumero") { type = NavType.StringType }
             )
         ) { backStackEntry ->
-            val normaNombre = backStackEntry.arguments?.getString("normaNombre") ?: "Norma"
+            val normaNombre = backStackEntry.arguments?.getString("normaNombre") ?: "Código del Trabajo"
             val articuloNumero = backStackEntry.arguments?.getString("articuloNumero") ?: "Art. 1"
             NuevaNotaScreen(
                 normaNombre = normaNombre,

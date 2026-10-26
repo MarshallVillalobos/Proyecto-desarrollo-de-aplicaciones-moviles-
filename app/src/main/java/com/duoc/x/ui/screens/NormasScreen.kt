@@ -12,75 +12,44 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.duoc.x.model.NormaItem
 import com.duoc.x.navigation.Screen
 import com.duoc.x.ui.components.CodigoChBottomBar
 import com.duoc.x.ui.components.CodigoChTopBar
 import com.duoc.x.ui.theme.*
+import com.duoc.x.viewmodel.EstudioViewModel
 
-// Modelo interno de datos para las normas
-data class NormaItem(
-    val id: String,
-    val titulo: String,
-    val descripcion: String,
-    val categoria: String
-)
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NormasScreen(
+    viewModel: EstudioViewModel,
     onNormaClick: (String) -> Unit,
     onNavigateToMisEstudios: () -> Unit,
     onProfileClick: () -> Unit
 ) {
-    // Lista de leyes y códigos según el Mockup
-    val listaNormas = remember {
-        listOf(
-            NormaItem(
-                id = "c_civil",
-                titulo = "Código Civil",
-                descripcion = "Materia: Derecho Civil, Contratos y Propiedad",
-                categoria = "Civil"
-            ),
-            NormaItem(
-                id = "c_trabajo",
-                titulo = "Código del Trabajo",
-                descripcion = "Materia: Derecho Laboral, Protección y Contratos",
-                categoria = "Laboral"
-            ),
-            NormaItem(
-                id = "c_constitucion",
-                titulo = "Constitución Política",
-                descripcion = "Materia: Derecho Político, Bases de la Institucionalidad",
-                categoria = "Constitución"
-            )
-        )
-    }
-
-    // Estados para la búsqueda y el filtro de categorías
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedCategoria by remember { mutableStateOf("Todas") }
-
+    val estado by viewModel.estado.collectAsState()
     val categorias = listOf("Todas", "Civil", "Laboral", "Constitución")
 
-    // Filtrado dinámico en tiempo real
-    val normasFiltradas = listaNormas.filter { norma ->
-        val coincideBusqueda = norma.titulo.contains(searchQuery, ignoreCase = true) ||
-                norma.descripcion.contains(searchQuery, ignoreCase = true)
-        val coincideCategoria = selectedCategoria == "Todas" || norma.categoria.equals(selectedCategoria, ignoreCase = true)
+    val normasFiltradas = estado.normas.filter { norma ->
+        val coincideBusqueda = norma.titulo.contains(estado.searchQuery, ignoreCase = true) ||
+                norma.descripcion.contains(estado.searchQuery, ignoreCase = true)
+        val coincideCategoria = estado.selectedCategoria == "Todas" ||
+                norma.categoria.equals(estado.selectedCategoria, ignoreCase = true)
         coincideBusqueda && coincideCategoria
     }
 
     Scaffold(
         topBar = {
             CodigoChTopBar(
-                subtitle = "2. NORMAS",
+                subtitle = "Código CH",
                 title = "Normas",
                 showBackButton = false,
                 onProfileClick = onProfileClick
@@ -103,15 +72,15 @@ fun NormasScreen(
                 .padding(horizontal = 18.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 1. Bar de búsqueda
+            // 1. Barra de búsqueda conectada al ViewModel
             OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+                value = estado.searchQuery,
+                onValueChange = viewModel::onSearchQueryChange,
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(CardWhite, shape = RoundedCornerShape(12.dp)),
                 placeholder = {
-                    Text("Buscar norma o categoría...", color = TextMuted, fontSize = 14.sp)
+                    Text("Buscar norma o materia...", color = TextMuted, fontSize = 14.sp)
                 },
                 leadingIcon = {
                     Icon(
@@ -130,15 +99,15 @@ fun NormasScreen(
                 )
             )
 
-            // 2. Filtros por categoría (Chips horizontal)
+            // 2. Filtros por categoría
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 items(categorias) { cat ->
-                    val isSelected = selectedCategoria == cat
+                    val isSelected = estado.selectedCategoria == cat
                     Surface(
-                        onClick = { selectedCategoria = cat },
+                        onClick = { viewModel.onCategoriaSelected(cat) },
                         shape = RoundedCornerShape(20.dp),
                         color = if (isSelected) PrimaryNavy else CardWhite,
                         border = if (isSelected) null else BorderStroke(1.dp, BorderBeige),
@@ -178,10 +147,10 @@ fun NormasScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    items(normasFiltradas) { norma ->
+                    items(normasFiltradas, key = { it.id }) { norma ->
                         NormaCardItem(
                             norma = norma,
-                            onClick = { onNormaClick(norma.id) }
+                            onClick = { onNormaClick(norma.titulo) } // Envía el título real
                         )
                     }
                 }
