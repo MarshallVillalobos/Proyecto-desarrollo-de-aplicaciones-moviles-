@@ -43,3 +43,12 @@ El proyecto (`com.duoc.x`) separa estrictamente las responsabilidades en capas:
 1. Clonar el repositorio desde GitHub:
    ```bash
    git clone [https://github.com/MarshallVillalobos/Proyecto-desarrollo-de-aplicaciones-moviles-.git](https://github.com/MarshallVillalobos/Proyecto-desarrollo-de-aplicaciones-moviles-.git)
+2. Abrir Android Studio y seleccionar Open para cargar la carpeta del proyecto.
+
+3. Esperar a que finalice la sincronización automática de Gradle.
+
+4. Conectar un dispositivo físico con Android (API 24 / Android 7.0 o superior) o iniciar un emulador configurado.
+
+5. Presionar el botón Run 'app' (Shift + F10).
+
+6. (Opcional) En la pantalla de Login, tocar "Crear cuenta" para autocompletar las credenciales de prueba (estudiante.derecho@duocuc.cl / duoc2025) e iniciar sesión.
