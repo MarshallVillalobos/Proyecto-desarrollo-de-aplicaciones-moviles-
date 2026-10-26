@@ -1,24 +1,60 @@
 package com.duoc.x.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import com.duoc.x.model.ArticuloItem
 import com.duoc.x.model.EstudioUiState
 import com.duoc.x.model.NormaItem
+import com.duoc.x.repository.CodigoChRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class EstudioViewModel : ViewModel() {
+class EstudioViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _estado = MutableStateFlow(
-        EstudioUiState(
-            normas = obtenerNormasIniciales(),
-            articulos = obtenerArticulosIniciales()
-        )
-    )
+    private val repository = CodigoChRepository(application.applicationContext)
+
+    private val _estado = MutableStateFlow(EstudioUiState())
     val estado: StateFlow<EstudioUiState> = _estado.asStateFlow()
 
+    init {
+        cargarDatosPersistentes()
+    }
+
+    private fun cargarDatosPersistentes() {
+        val usuario = repository.obtenerUsuarioActual()
+        val articulosSincronizados = repository.sincronizarArticulosConBaseDeDatos(obtenerArticulosIniciales())
+
+        _estado.update {
+            it.copy(
+                normas = obtenerNormasIniciales(),
+                articulos = articulosSincronizados,
+                fontSizeSp = usuario.tamanoFuenteSp,
+                usuarioNombre = usuario.nombre,
+                usuarioCorreo = usuario.correo
+            )
+        }
+    }
+
+    // Guarda en Room el usuario que acaba de iniciar sesión en el Login
+    fun registrarSesionActiva(correo: String) {
+        val correoFinal = correo.ifBlank { "estudiante.derecho@duocuc.cl" }
+        repository.guardarSesionUsuario(correoFinal, _estado.value.fontSizeSp)
+        val usuario = repository.obtenerUsuarioActual()
+        _estado.update {
+            it.copy(
+                usuarioNombre = usuario.nombre,
+                usuarioCorreo = usuario.correo
+            )
+        }
+    }
+
+    fun cerrarSesion() {
+        repository.cerrarSesionUsuario()
+    }
+
+    // --- Acciones para NormasScreen ---
     fun onSearchQueryChange(nuevaBusqueda: String) {
         _estado.update { it.copy(searchQuery = nuevaBusqueda) }
     }
@@ -27,24 +63,25 @@ class EstudioViewModel : ViewModel() {
         _estado.update { it.copy(selectedCategoria = categoria) }
     }
 
+    // --- Acciones para LecturaScreen y PerfilScreen (Persisten en Room) ---
     fun aumentarFuente() {
-        _estado.update { estadoActual ->
-            if (estadoActual.fontSizeSp < 28) {
-                estadoActual.copy(fontSizeSp = estadoActual.fontSizeSp + 2)
-            } else estadoActual
+        val actual = _estado.value.fontSizeSp
+        if (actual < 28) {
+            cambiarFuenteDirecto(actual + 2)
         }
     }
 
     fun disminuirFuente() {
-        _estado.update { estadoActual ->
-            if (estadoActual.fontSizeSp > 12) {
-                estadoActual.copy(fontSizeSp = estadoActual.fontSizeSp - 2)
-            } else estadoActual
+        val actual = _estado.value.fontSizeSp
+        if (actual > 12) {
+            cambiarFuenteDirecto(actual - 2)
         }
     }
 
     fun cambiarFuenteDirecto(nuevoTamano: Int) {
-        _estado.update { it.copy(fontSizeSp = nuevoTamano.coerceIn(12, 28)) }
+        val tamanoAjustado = nuevoTamano.coerceIn(12, 28)
+        repository.actualizarTamanoFuente(tamanoAjustado)
+        _estado.update { it.copy(fontSizeSp = tamanoAjustado) }
     }
 
     fun alternarDestacado(normaTitulo: String, articuloNumero: String) {
@@ -53,7 +90,9 @@ class EstudioViewModel : ViewModel() {
                 if (art.normaTitulo.equals(normaTitulo, ignoreCase = true) &&
                     art.numero.equals(articuloNumero, ignoreCase = true)
                 ) {
-                    art.copy(esDestacado = !art.esDestacado)
+                    val actualizado = art.copy(esDestacado = !art.esDestacado)
+                    repository.guardarEstadoArticulo(actualizado)
+                    actualizado
                 } else {
                     art
                 }
@@ -62,6 +101,7 @@ class EstudioViewModel : ViewModel() {
         }
     }
 
+    // --- Acciones para NuevaNotaScreen y MisEstudiosScreen (Persisten en Room) ---
     fun prepararBorradorNota(normaTitulo: String, articuloNumero: String) {
         val notaExistente = obtenerArticulo(normaTitulo, articuloNumero)?.nota ?: ""
         _estado.update { it.copy(borradorNota = notaExistente, errorNota = null) }
@@ -85,7 +125,9 @@ class EstudioViewModel : ViewModel() {
                 if (art.normaTitulo.equals(normaTitulo, ignoreCase = true) &&
                     art.numero.equals(articuloNumero, ignoreCase = true)
                 ) {
-                    art.copy(nota = textoLimpio)
+                    val actualizado = art.copy(nota = textoLimpio)
+                    repository.guardarEstadoArticulo(actualizado)
+                    actualizado
                 } else {
                     art
                 }
@@ -98,7 +140,13 @@ class EstudioViewModel : ViewModel() {
     fun eliminarNota(articuloId: String) {
         _estado.update { estadoActual ->
             val listaActualizada = estadoActual.articulos.map { art ->
-                if (art.id == articuloId) art.copy(nota = "") else art
+                if (art.id == articuloId) {
+                    val actualizado = art.copy(nota = "")
+                    repository.guardarEstadoArticulo(actualizado)
+                    actualizado
+                } else {
+                    art
+                }
             }
             estadoActual.copy(articulos = listaActualizada)
         }
@@ -133,7 +181,6 @@ class EstudioViewModel : ViewModel() {
     )
 
     private fun obtenerArticulosIniciales(): List<ArticuloItem> = listOf(
-        // Código del Trabajo
         ArticuloItem(
             id = "ct_art1",
             normaTitulo = "Código del Trabajo",
@@ -170,7 +217,6 @@ class EstudioViewModel : ViewModel() {
             esDestacado = false,
             nota = ""
         ),
-        // Código Civil
         ArticuloItem(
             id = "cc_art1",
             normaTitulo = "Código Civil",
@@ -198,7 +244,6 @@ class EstudioViewModel : ViewModel() {
             esDestacado = false,
             nota = "Ejemplo para el ensayo de contratos."
         ),
-
         ArticuloItem(
             id = "cp_art1",
             normaTitulo = "Constitución Política",

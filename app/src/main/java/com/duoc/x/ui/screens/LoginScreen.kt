@@ -35,7 +35,7 @@ import com.duoc.x.viewmodel.LoginViewModel
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (String) -> Unit,
     viewModel: LoginViewModel = viewModel()
 ) {
     // Observamos el estado reactivo desde el LoginViewModel
@@ -223,7 +223,7 @@ fun LoginScreen(
         Button(
             onClick = {
                 if (viewModel.validarFormulario()) {
-                    onLoginSuccess()
+                    onLoginSuccess(estado.correo)
                 }
             },
             shape = RoundedCornerShape(12.dp),

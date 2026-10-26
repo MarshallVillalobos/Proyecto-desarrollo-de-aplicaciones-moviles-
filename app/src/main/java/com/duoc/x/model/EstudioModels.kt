@@ -30,5 +30,7 @@ data class EstudioUiState(
     val normas: List<NormaItem> = emptyList(),
     val articulos: List<ArticuloItem> = emptyList(),
     val borradorNota: String = "",
-    val errorNota: String? = null
+    val errorNota: String? = null,
+    val usuarioNombre: String = "Camila Valdés Rojas",
+    val usuarioCorreo: String = "estudiante.derecho@duocuc.cl"
 )

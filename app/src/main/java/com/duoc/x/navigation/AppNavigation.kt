@@ -22,7 +22,8 @@ fun AppNavigation() {
         // 1. Pantalla Login
         composable(route = Screen.Login.route) {
             LoginScreen(
-                onLoginSuccess = {
+                onLoginSuccess = { correoIngresado ->
+                    estudioViewModel.registrarSesionActiva(correoIngresado)
                     navController.navigate(Screen.Normas.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
@@ -161,6 +162,7 @@ fun AppNavigation() {
         // 7. Pantalla Perfil
         composable(route = Screen.Perfil.route) {
             PerfilScreen(
+                viewModel = estudioViewModel,
                 onBackClick = { navController.popBackStack() },
                 onNavigateToNormas = {
                     navController.navigate(Screen.Normas.route)
