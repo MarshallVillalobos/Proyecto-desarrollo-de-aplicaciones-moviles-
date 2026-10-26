@@ -203,7 +203,7 @@ fun PerfilScreen(
                         color = BadgeBlueBg
                     ) {
                         Text(
-                            text = "Perfil Estudiante (Sesión Room activa)",
+                            text = "Estudiante de Derecho",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = PrimaryNavy,
