@@ -107,7 +107,6 @@ fun AppNavigation() {
                 }
             )
         }
-
         // 5. Pantalla Nueva Nota
         composable(
             route = Screen.NuevaNota.route,
@@ -121,6 +120,7 @@ fun AppNavigation() {
             NuevaNotaScreen(
                 normaNombre = normaNombre,
                 articuloNumero = articuloNumero,
+                viewModel = estudioViewModel,
                 onGuardarNotaSuccess = {
                     navController.navigate(Screen.MisEstudios.route) {
                         popUpTo(Screen.Normas.route)
@@ -142,6 +142,10 @@ fun AppNavigation() {
         // 6. Pantalla Mis Estudios
         composable(route = Screen.MisEstudios.route) {
             MisEstudiosScreen(
+                viewModel = estudioViewModel,
+                onArticuloClick = { normaNombre, articuloNumero ->
+                    navController.navigate(Screen.Lectura.createRoute(normaNombre, articuloNumero))
+                },
                 onNavigateToNormas = {
                     navController.navigate(Screen.Normas.route) {
                         popUpTo(Screen.Normas.route) { inclusive = false }
