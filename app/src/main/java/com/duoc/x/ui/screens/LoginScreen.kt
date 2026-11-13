@@ -222,7 +222,7 @@ fun LoginScreen(
         // Botón principal: Iniciar sesión
         Button(
             onClick = {
-                if (viewModel.validarFormulario()) {
+                if (viewModel.validarFormulario(estado.correo, estado.clave)) {
                     onLoginSuccess(estado.correo)
                 }
             },

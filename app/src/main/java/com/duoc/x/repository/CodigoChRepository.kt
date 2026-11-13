@@ -178,11 +178,56 @@ class CodigoChRepository(context: Context) {
             clave = errorClave
         )
 
+        val hayErroresFormato = listOfNotNull(nuevosErrores.correo, nuevosErrores.clave).isNotEmpty()
+        if (hayErroresFormato) {
+            return Pair(estadoActual.copy(errores = nuevosErrores), false)
+        }
+
+        // --- DATOS TEMPORALES PARA PRUEBAS (Reemplazar por Retrofit/Xano después) ---
+        val correoValido = "estudiante.derecho@duocuc.cl"
+        val claveValida = "123456"
+
+        return if (correo.equals(correoValido, ignoreCase = true) && clave == claveValida) {
+            Pair(estadoActual.copy(errores = LoginErrores()), true)
+        } else {
+            val errorCredenciales = LoginErrores(
+                clave = "Credenciales incorrectas"
+            )
+            Pair(estadoActual.copy(errores = errorCredenciales), false)
+        }
+    }
+
+    /*
+    fun validarFormulario(
+        estadoActual: LoginUiState,
+        correo: String,
+        clave: String
+    ): Pair<LoginUiState, Boolean> {
+        val errorCorreo = when {
+            correo.isBlank() -> "El correo electrónico es obligatorio"
+            !Patterns.EMAIL_ADDRESS.matcher(correo).matches() ->
+                "Ingresa un correo válido (ej. estudiante.derecho@duocuc.cl)"
+            else -> null
+        }
+
+        val errorClave = when {
+            clave.isBlank() -> "La contraseña es obligatoria"
+            clave.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
+            else -> null
+        }
+
+        val nuevosErrores = LoginErrores(
+            correo = errorCorreo,
+            clave = errorClave
+        )
+
         val hayErrores = listOfNotNull(nuevosErrores.correo, nuevosErrores.clave).isNotEmpty()
         val nuevoEstado = estadoActual.copy(errores = nuevosErrores)
 
         return Pair(nuevoEstado, !hayErrores)
     }
+
+     */
 
     // Esta funcion necesita la funcion hecha con el retrofit dentro de ApiService
 
@@ -240,10 +285,10 @@ class CodigoChRepository(context: Context) {
 
     fun cargarDatosPersistentes(estadoActual: EstudioUiState): EstudioUiState {
         val usuario = obtenerUsuarioActual()
-        val articulosSincronizados = sincronizarArticulosConBaseDeDatos(obtenerArticulosIniciales())
+        val articulosSincronizados = sincronizarArticulosConBaseDeDatos(obtenerArticulos())
 
         return estadoActual.copy(
-            normas = obtenerNormasIniciales(),
+            normas = obtenerNormas(),
             articulos = articulosSincronizados,
             fontSizeSp = usuario.tamanoFuenteSp,
             usuarioNombre = usuario.nombre,
@@ -365,10 +410,10 @@ class CodigoChRepository(context: Context) {
     }
 
 
-    // Reemplazar listas con la db de xano usando el retrofit porque osino no tengo como sacar los datos
+    // Reemplazar funciones para que usen la db de xano usando el retrofit
 
-
-    private fun obtenerNormasIniciales(): List<NormaItem> {
+    //Esta es puro para que funcione la app
+    private fun obtenerNormas(): List<NormaItem> {
         return listOf(
             NormaItem(
                 id = "norma_1",
@@ -391,7 +436,8 @@ class CodigoChRepository(context: Context) {
         )
     }
 
-    private fun obtenerArticulosIniciales(): List<ArticuloItem> {
+    //Esta es puro para que funcione la app
+    private fun obtenerArticulos(): List<ArticuloItem> {
         return listOf(
             ArticuloItem(
                 id = "art_cpr_1",

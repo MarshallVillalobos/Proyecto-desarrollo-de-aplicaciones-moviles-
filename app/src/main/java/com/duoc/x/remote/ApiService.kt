@@ -3,11 +3,21 @@ package com.duoc.x.remote
 import retrofit2.http.GET
 
 interface ApiService {
+
+
+    //Agregar funcion aca abajo para nuestro proyecto (funcion "autenticarUsuario" / funcion "ObtenerArticulos" y "ObtenerNormas")
+
     @GET(" TU PATH ")
+    suspend fun Login(){
 
-    //Agregar funcion aca abajo para nuestro proyecto (funcion "autenticarUsuario")
+    }
+    @GET(" ")
+    suspend fun ObtenerNormas(){
 
-    suspend fun login(){
+    }
+
+    @GET(" ")
+    suspend fun ObtenerArticulos(){
 
     }
 

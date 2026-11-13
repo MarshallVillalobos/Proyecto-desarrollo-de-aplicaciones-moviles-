@@ -1,5 +1,7 @@
 package com.duoc.x.model
 
+import com.google.gson.annotations.SerializedName
+
 // Modelo para cada ley o código en la pantalla de Normas
 data class NormaItem(
     val id: String,
@@ -8,17 +10,19 @@ data class NormaItem(
     val categoria: String
 )
 
-// Modelo unificado para cada artículo legal, su estado de destacado y su nota
 data class ArticuloItem(
     val id: String,
-    val normaTitulo: String,
+    @SerializedName("norma_id")
+    val normaId: String = "",
+    @SerializedName("norma_titulo")
+    val normaTitulo: String = "",
     val numero: String,
     val extracto: String,
     val contenido: String,
+    @SerializedName("es_destacado")
     val esDestacado: Boolean = false,
     val nota: String = ""
 ) {
-    // indica si el artículo tiene nota
     val tieneNota: Boolean
         get() = nota.isNotBlank()
 }
