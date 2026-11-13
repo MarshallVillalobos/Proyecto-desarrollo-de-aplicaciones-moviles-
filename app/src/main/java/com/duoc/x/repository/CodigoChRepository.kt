@@ -12,7 +12,7 @@ import com.duoc.x.model.LoginErrores
 import com.duoc.x.model.LoginRequest
 import com.duoc.x.model.LoginUiState
 import com.duoc.x.model.NormaItem
-import com.duoc.x.network.RetrofitClient
+import com.duoc.x.remote.RetrofitInstance
 
 class CodigoChRepository(context: Context) {
 
@@ -184,6 +184,10 @@ class CodigoChRepository(context: Context) {
         return Pair(nuevoEstado, !hayErrores)
     }
 
+    // Esta funcion necesita la funcion hecha con el retrofit dentro de ApiService
+
+    /*
+
     suspend fun autenticarUsuario(
         estadoActual: LoginUiState,
         correo: String,
@@ -195,7 +199,7 @@ class CodigoChRepository(context: Context) {
         }
 
         return try {
-            val respuesta = RetrofitClient.api.login(LoginRequest(correo, clave))
+            val respuesta = RetrofitInstance.api.login(LoginRequest(correo, clave))
 
             if (respuesta.isSuccessful) {
                 Pair(estadoValidado, true)
@@ -217,6 +221,8 @@ class CodigoChRepository(context: Context) {
         }
     }
 
+
+     */
 
     // Funciones de  EstudioViewModel
 
