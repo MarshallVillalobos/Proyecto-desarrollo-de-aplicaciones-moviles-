@@ -4,12 +4,10 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.duoc.x.model.ArticuloItem
 import com.duoc.x.model.EstudioUiState
-import com.duoc.x.model.NormaItem
 import com.duoc.x.repository.CodigoChRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 
 class EstudioViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -19,35 +17,11 @@ class EstudioViewModel(application: Application) : AndroidViewModel(application)
     val estado: StateFlow<EstudioUiState> = _estado.asStateFlow()
 
     init {
-        cargarDatosPersistentes()
+        _estado.value = repository.cargarDatosPersistentes(_estado.value)
     }
 
-    private fun cargarDatosPersistentes() {
-        val usuario = repository.obtenerUsuarioActual()
-        val articulosSincronizados = repository.sincronizarArticulosConBaseDeDatos(obtenerArticulosIniciales())
-
-        _estado.update {
-            it.copy(
-                normas = obtenerNormasIniciales(),
-                articulos = articulosSincronizados,
-                fontSizeSp = usuario.tamanoFuenteSp,
-                usuarioNombre = usuario.nombre,
-                usuarioCorreo = usuario.correo
-            )
-        }
-    }
-
-    // Guarda en Room el usuario que acaba de iniciar sesión en el Login
     fun registrarSesionActiva(correo: String) {
-        val correoFinal = correo.ifBlank { "estudiante.derecho@duocuc.cl" }
-        repository.guardarSesionUsuario(correoFinal, _estado.value.fontSizeSp)
-        val usuario = repository.obtenerUsuarioActual()
-        _estado.update {
-            it.copy(
-                usuarioNombre = usuario.nombre,
-                usuarioCorreo = usuario.correo
-            )
-        }
+        _estado.value = repository.registrarSesionActiva(_estado.value, correo)
     }
 
     fun cerrarSesion() {
@@ -56,113 +30,54 @@ class EstudioViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Acciones para NormasScreen ---
     fun onSearchQueryChange(nuevaBusqueda: String) {
-        _estado.update { it.copy(searchQuery = nuevaBusqueda) }
+        _estado.value = repository.actualizarBusqueda(_estado.value, nuevaBusqueda)
     }
 
     fun onCategoriaSelected(categoria: String) {
-        _estado.update { it.copy(selectedCategoria = categoria) }
+        _estado.value = repository.seleccionarCategoria(_estado.value, categoria)
     }
 
-    // --- Acciones para LecturaScreen y PerfilScreen (Persisten en Room) ---
+    // --- Acciones para LecturaScreen y PerfilScreen ---
     fun aumentarFuente() {
-        val actual = _estado.value.fontSizeSp
-        if (actual < 28) {
-            cambiarFuenteDirecto(actual + 2)
-        }
+        _estado.value = repository.aumentarFuente(_estado.value)
     }
 
     fun disminuirFuente() {
-        val actual = _estado.value.fontSizeSp
-        if (actual > 12) {
-            cambiarFuenteDirecto(actual - 2)
-        }
+        _estado.value = repository.disminuirFuente(_estado.value)
     }
 
     fun cambiarFuenteDirecto(nuevoTamano: Int) {
-        val tamanoAjustado = nuevoTamano.coerceIn(12, 28)
-        repository.actualizarTamanoFuente(tamanoAjustado)
-        _estado.update { it.copy(fontSizeSp = tamanoAjustado) }
+        _estado.value = repository.cambiarFuenteDirecto(_estado.value, nuevoTamano)
     }
 
     fun alternarDestacado(normaTitulo: String, articuloNumero: String) {
-        _estado.update { estadoActual ->
-            val listaActualizada = estadoActual.articulos.map { art ->
-                if (art.normaTitulo.equals(normaTitulo, ignoreCase = true) &&
-                    art.numero.equals(articuloNumero, ignoreCase = true)
-                ) {
-                    val actualizado = art.copy(esDestacado = !art.esDestacado)
-                    repository.guardarEstadoArticulo(actualizado)
-                    actualizado
-                } else {
-                    art
-                }
-            }
-            estadoActual.copy(articulos = listaActualizada)
-        }
+        _estado.value = repository.alternarDestacado(_estado.value, normaTitulo, articuloNumero)
     }
 
-    // --- Acciones para NuevaNotaScreen y MisEstudiosScreen (Persisten en Room) ---
+    // --- Acciones para NuevaNotaScreen y MisEstudiosScreen ---
     fun prepararBorradorNota(normaTitulo: String, articuloNumero: String) {
-        val notaExistente = obtenerArticulo(normaTitulo, articuloNumero)?.nota ?: ""
-        _estado.update { it.copy(borradorNota = notaExistente, errorNota = null) }
+        _estado.value = repository.prepararBorradorNota(_estado.value, normaTitulo, articuloNumero)
     }
 
     fun onBorradorNotaChange(nuevoTexto: String) {
-        _estado.update { it.copy(borradorNota = nuevoTexto, errorNota = null) }
+        _estado.value = repository.actualizarBorradorNota(_estado.value, nuevoTexto)
     }
 
     fun validarYGuardarNota(normaTitulo: String, articuloNumero: String): Boolean {
-        val textoLimpio = _estado.value.borradorNota.trim()
-        if (textoLimpio.isEmpty()) {
-            _estado.update {
-                it.copy(errorNota = "La nota no puede estar vacía. Escribe un apunte antes de guardar.")
-            }
-            return false
-        }
-
-        _estado.update { estadoActual ->
-            val listaActualizada = estadoActual.articulos.map { art ->
-                if (art.normaTitulo.equals(normaTitulo, ignoreCase = true) &&
-                    art.numero.equals(articuloNumero, ignoreCase = true)
-                ) {
-                    val actualizado = art.copy(nota = textoLimpio)
-                    repository.guardarEstadoArticulo(actualizado)
-                    actualizado
-                } else {
-                    art
-                }
-            }
-            estadoActual.copy(articulos = listaActualizada, errorNota = null)
-        }
-        return true
+        val (nuevoEstado, guardado) = repository.validarYGuardarNota(
+            estadoActual = _estado.value,
+            normaTitulo = normaTitulo,
+            articuloNumero = articuloNumero
+        )
+        _estado.value = nuevoEstado
+        return guardado
     }
 
     fun eliminarNota(articuloId: String) {
-        _estado.update { estadoActual ->
-            val listaActualizada = estadoActual.articulos.map { art ->
-                if (art.id == articuloId) {
-                    val actualizado = art.copy(nota = "")
-                    repository.guardarEstadoArticulo(actualizado)
-                    actualizado
-                } else {
-                    art
-                }
-            }
-            estadoActual.copy(articulos = listaActualizada)
-        }
+        _estado.value = repository.eliminarNota(_estado.value, articuloId)
     }
 
     fun obtenerArticulo(normaTitulo: String, articuloNumero: String): ArticuloItem? {
-        return _estado.value.articulos.find {
-            it.normaTitulo.equals(normaTitulo, ignoreCase = true) &&
-                    it.numero.equals(articuloNumero, ignoreCase = true)
-        }
+        return repository.obtenerArticulo(_estado.value, normaTitulo, articuloNumero)
     }
-
-    private fun obtenerNormasIniciales(): List<NormaItem> = listOf(
-
-    )
-
-    private fun obtenerArticulosIniciales(): List<ArticuloItem> = listOf(
-    )
 }
