@@ -1,6 +1,7 @@
 # Código CH — Aplicación Móvil de Estudio y Consulta Legal
 
-Aplicación nativa para Android desarrollada con **Kotlin** y **Jetpack Compose** bajo el patrón de arquitectura **MVVM (Model-View-ViewModel)**. Diseñada para facilitar a estudiantes de Derecho la consulta rápida de cuerpos legales chilenos, lectura adaptativa de artículos, creación de apuntes personales y gestión de textos destacados.
+Aplicación nativa para Android desarrollada con **Kotlin** y **Jetpack Compose** bajo el patrón de arquitectura **MVVM (Model-View-ViewModel)**. Diseñada para facilitar a estudiantes de Derecho la consulta rápida de cuerpos legales chilenos, lectura adaptativa de artículos, creación de apuntes personales y gestión de textos destacados. 
+A nivel de geistion de datos, se integra **Retrofit** para el consumo y sincronización de informacion desde una base de datos remota montada en **Xano**, complementado con **Room** para el almacenamiento de datos temporales, caché de sesión y persistencia local de preferencias de lectura y apuntes. 
 
 ---
 
@@ -22,20 +23,21 @@ Aplicación nativa para Android desarrollada con **Kotlin** y **Jetpack Compose*
 
 ---
 
-##  Arquitectura y Tecnologías Utilizadas
+## Arquitectura y Tecnologías Utilizadas
 
-El proyecto (`com.duoc.x`) separa estrictamente las responsabilidades en capas:
+El proyecto (`com.duoc.x`) implementa una arquitectura **MVVM (Model-View-ViewModel)** con separación estricta de responsabilidades en capas, desacoplando la interfaz gráfica de la lógica de negocio y el acceso a datos:
 
-* **`ui/screens` y `ui/components`:** Vistas declarativas en Jetpack Compose y barras reutilizables (`CodigoChTopBar`, `CodigoChBottomBar`).
-* **`ui/theme`:** Paleta de colores oficial del diseño (`BgApp`, `PrimaryNavy`, `HighlightYellow`, `DangerRed`, etc.).
-* **`viewmodel`:** Gestión de estado reactivo con `StateFlow` y lógica de validación centralizada (`LoginViewModel`, `EstudioViewModel`).
-* **`model`:** Modelos de datos inmutables y estados de interfaz (`LoginUiState`, `EstudioUiState`, `NormaItem`, `ArticuloItem`).
-* **`data` y `repository`:** Persistencia local mediante **Room Database** (`AppDatabase`, `UsuarioDao`, `ArticuloEstudioDao`) administrada a través de `CodigoChRepository`.
-* **`navigation`:** Grafo de navegación tipado con `Navigation Compose` (`NavHost` y `sealed class Screen`).
-* **Recursos Nativos:**
+- **`ui/screens` y `ui/components`:** Vistas declarativas en Jetpack Compose y barras reutilizables (`CodigoChTopBar`, `CodigoChBottomBar`) que observan el estado reactivo y delegan las interacciones del usuario.
+- **`ui/theme`:** Paleta de colores oficial del diseño (`BgApp`, `PrimaryNavy`, `HighlightYellow`, `DangerRed`, etc.).
+- **`viewmodel`:** Gestión y exposición del estado reactivo de la interfaz mediante `StateFlow` (`LoginViewModel`, `EstudioViewModel`). Funcionan estrictamente como intermediarios entre la UI y el repositorio, delegando acciones sin contener reglas de negocio ni validaciones.
+- **`model`:** Modelos de datos inmutables, estados de interfaz (`LoginUiState`, `EstudioUiState`, `NormaItem`, `ArticuloItem`) y modelos de petición/respuesta para red (`LoginRequest`, `LoginResponse`).
+- **`repository`:** Capa central de lógica de negocio (`CodigoChRepository`). Concentra las validaciones de formularios, reglas de estudio, transformaciones de estado y coordina tanto la persistencia local como las peticiones remotas.
+- **`data`:** Persistencia local mediante **Room Database** (`AppDatabase`, `UsuarioDao`, `ArticuloEstudioDao`) y `SharedPreferences` para el almacenamiento offline de sesiones, notas y artículos destacados.
+- **`remote`:** Consumo de API REST propia mediante **Retrofit** y **Gson** (`RetrofitInstance`, `ApiService`) para la autenticación remota de usuarios.
+- **`navigation`:** Grafo de navegación tipado con `Navigation Compose` (`NavHost` y `sealed class Screen`).
+- **Recursos Nativos:**
     1. **Notificaciones Locales:** Permiso `POST_NOTIFICATIONS` solicitado en tiempo de ejecución y emisión mediante `NotificationManager`.
     2. **Compartir / Exportar Contenido:** Uso de `Intent.ACTION_SEND` nativo de Android.
-
 ---
 
 ##  Pasos para Ejecutar el Proyecto
