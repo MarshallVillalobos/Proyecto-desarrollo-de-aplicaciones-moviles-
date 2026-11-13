@@ -1,10 +1,14 @@
 package com.duoc.x.repository
 
 import android.content.Context
+import android.util.Patterns
 import com.duoc.x.data.AppDatabase
 import com.duoc.x.data.ArticuloEstudioEntity
 import com.duoc.x.data.UsuarioEntity
 import com.duoc.x.model.ArticuloItem
+import com.duoc.x.model.LoginErrores
+import com.duoc.x.model.LoginUiState
+import androidx.core.content.edit
 
 class CodigoChRepository(context: Context) {
 
@@ -37,7 +41,8 @@ class CodigoChRepository(context: Context) {
 
         try {
             db?.usuarioDao()?.guardarUsuario(entidad)
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
 
         prefs.edit()
             .putString("user_nombre", entidad.nombre)
@@ -50,10 +55,12 @@ class CodigoChRepository(context: Context) {
     fun obtenerUsuarioActual(): UsuarioEntity {
         try {
             db?.usuarioDao()?.obtenerUsuario()?.let { return it }
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
 
         val nombre = prefs.getString("user_nombre", "Camila Valdés Rojas") ?: "Camila Valdés Rojas"
-        val correo = prefs.getString("user_correo", "estudiante.derecho@duocuc.cl") ?: "estudiante.derecho@duocuc.cl"
+        val correo = prefs.getString("user_correo", "estudiante.derecho@duocuc.cl")
+            ?: "estudiante.derecho@duocuc.cl"
         val fuente = prefs.getInt("user_fuente", 16)
         return UsuarioEntity(id = 1, nombre = nombre, correo = correo, tamanoFuenteSp = fuente)
     }
@@ -63,15 +70,17 @@ class CodigoChRepository(context: Context) {
         val actual = obtenerUsuarioActual().copy(tamanoFuenteSp = tamanoSp)
         try {
             db?.usuarioDao()?.guardarUsuario(actual)
-        } catch (_: Exception) { }
-        prefs.edit().putInt("user_fuente", tamanoSp).apply()
+        } catch (_: Exception) {
+        }
+        prefs.edit { putInt("user_fuente", tamanoSp) }
     }
 
     // Limpia los datos de sesión al confirmar el Modal de "Cerrar sesión"
     fun cerrarSesionUsuario() {
         try {
             db?.usuarioDao()?.cerrarSesion()
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
         prefs.edit()
             .remove("user_nombre")
             .remove("user_correo")
@@ -89,7 +98,8 @@ class CodigoChRepository(context: Context) {
         )
         try {
             db?.articuloEstudioDao()?.guardarEstadoArticulo(entidad)
-        } catch (_: Exception) { }
+        } catch (_: Exception) {
+        }
 
         prefs.edit()
             .putBoolean("dest_${articulo.id}", articulo.esDestacado)
@@ -114,9 +124,53 @@ class CodigoChRepository(context: Context) {
                 )
             } else {
                 val destPref = prefs.getBoolean("dest_${articulo.id}", articulo.esDestacado)
-                val notaPref = prefs.getString("nota_${articulo.id}", articulo.nota) ?: articulo.nota
+                val notaPref =
+                    prefs.getString("nota_${articulo.id}", articulo.nota) ?: articulo.nota
                 articulo.copy(esDestacado = destPref, nota = notaPref)
             }
         }
     }
+
+
+    fun validarFormulario(
+        estadoActual: LoginUiState,
+        correo: String,
+        clave: String
+    ): Pair<LoginUiState, Boolean> {
+        val errorCorreo = when {
+            correo.isBlank() -> "El correo electrónico es obligatorio"
+            !Patterns.EMAIL_ADDRESS.matcher(correo).matches() ->
+                "Ingresa un correo válido (ej. estudiante.derecho@duocuc.cl)"
+            else -> null
+        }
+
+        val errorClave = when {
+            clave.isBlank() -> "La contraseña es obligatoria"
+            clave.length < 8 -> "La contraseña debe tener al menos 6 caracteres"
+            else -> null
+        }
+
+        val nuevosErrores = LoginErrores(
+            correo = errorCorreo,
+            clave = errorClave
+        )
+
+        val hayErrores = listOfNotNull(nuevosErrores.correo, nuevosErrores.clave).isNotEmpty()
+
+        val nuevoEstado = estadoActual.copy(errores = nuevosErrores)
+
+        return Pair(nuevoEstado, !hayErrores)
+    }
+
+
+    suspend fun autenticarUsuario(estadoActual: LoginUiState, correo: String, clave: String): Pair<LoginUiState, Boolean> {
+        val (estadoValidado, esValido) = validarFormulario(estadoActual, correo, clave)
+        if (!esValido) {
+            return Pair(estadoValidado, false)
+        } else {
+            return Pair(estadoValidado, true)
+            }
+        }
+
+
 }
