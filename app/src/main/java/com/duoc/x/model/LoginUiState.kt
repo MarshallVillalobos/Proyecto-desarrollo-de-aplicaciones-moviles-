@@ -13,8 +13,8 @@ data class LoginErrores(
 )
 
 data class LoginRequest(
-    val correo: String,
-    val clave: String
+    val correo: String = "",
+    val clave: String = ""
 )
 
 data class LoginResponse(

@@ -1,7 +1,12 @@
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
+
+
+val myUrl = gradleLocalProperties(rootDir, providers).getProperty("url_xano","")
 
 android {
     namespace = "com.duoc.x"
@@ -17,6 +22,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "URL_XANO", "\"$myUrl\"")
+
     }
 
     buildTypes {
@@ -32,6 +40,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

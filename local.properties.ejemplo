@@ -1,0 +1,6 @@
+#debes meter esta variable en local.properties
+tu link de xano sin "" y debe terminar en /
+
+ejemplo:
+
+url_xano = https://ejemplo-twmt.n7.xano.io/api:ejemplo/

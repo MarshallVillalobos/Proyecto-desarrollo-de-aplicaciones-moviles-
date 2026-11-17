@@ -222,8 +222,10 @@ fun LoginScreen(
         // Botón principal: Iniciar sesión
         Button(
             onClick = {
-                if (viewModel.validarFormulario(estado.correo, estado.clave)) {
-                    onLoginSuccess(estado.correo)
+                viewModel.validarFormulario(estado.correo, estado.clave) { esValido ->
+                    if (esValido) {
+                        onLoginSuccess(estado.correo)
+                    }
                 }
             },
             shape = RoundedCornerShape(12.dp),

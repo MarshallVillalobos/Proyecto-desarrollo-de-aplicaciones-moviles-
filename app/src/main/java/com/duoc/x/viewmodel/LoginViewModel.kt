@@ -2,12 +2,14 @@ package com.duoc.x.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.duoc.x.model.LoginUiState
 import com.duoc.x.repository.CodigoChRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -35,19 +37,19 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun alternarVisibilidadClave() {
-        estado_mutable.update {
-            it.copy(claveVisible = !it.claveVisible)
-        }
+        repository.alternarVisibilidadClave()
     }
 
-    fun validarFormulario(correo: String, clave: String): Boolean {
-        val (nuevoEstado, esValido) = repository.validarFormulario(
-            estadoActual = estado_mutable.value,
-            correo = correo,
-            clave = clave
-        )
-        estado_mutable.value = nuevoEstado
-        return esValido
+    fun validarFormulario(correo: String, clave: String, resultado: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val (nuevoEstado, esValido) = repository.autenticarUsuario(
+                estadoActual = estado_mutable.value,
+                correo = correo,
+                clave = clave
+            )
+            estado_mutable.value = nuevoEstado
+            resultado(esValido)
+        }
     }
 
 
