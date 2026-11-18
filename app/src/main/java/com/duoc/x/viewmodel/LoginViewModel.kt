@@ -15,40 +15,46 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
         private val repository = CodigoChRepository(application)
 
-    private val estado_mutable = MutableStateFlow(LoginUiState())
-    val estado: StateFlow<LoginUiState> = estado_mutable.asStateFlow()
+    private val _estado = MutableStateFlow(LoginUiState())
+    val estado: StateFlow<LoginUiState> = _estado.asStateFlow()
 
     fun onCorreoChange(nuevoCorreo: String) {
-        estado_mutable.update {
-            it.copy(
-                correo = nuevoCorreo,
-                errores = it.errores.copy(correo = null)
-            )
-        }
+        _estado.update { repository.actualizarCorreo(it, nuevoCorreo) }
     }
 
     fun onClaveChange(nuevaClave: String) {
-        estado_mutable.update {
-            it.copy(
-                clave = nuevaClave,
-                errores = it.errores.copy(clave = null)
-            )
-        }
+        _estado.update { repository.actualizarClave(it, nuevaClave) }
     }
 
     fun alternarVisibilidadClave() {
-        repository.alternarVisibilidadClave()
+        _estado.update { repository.alternarVisibilidadClave(it) }
     }
 
     fun validarFormulario(correo: String, clave: String, resultado: (Boolean) -> Unit) {
         viewModelScope.launch {
             val (nuevoEstado, esValido) = repository.autenticarUsuario(
-                estadoActual = estado_mutable.value,
+                estadoActual = _estado.value,
                 correo = correo,
                 clave = clave
             )
-            estado_mutable.value = nuevoEstado
+            _estado.value = nuevoEstado
             resultado(esValido)
+        }
+    }
+
+    fun registrarUsuario(
+        correo: String,
+        clave: String,
+        onResultado: (Boolean) -> Unit
+    ) {
+        viewModelScope.launch {
+            val (nuevoEstado, creado) = repository.registrarUsuario(
+                estadoActual = _estado.value,
+                correo = correo,
+                clave = clave
+            )
+            _estado.value = nuevoEstado
+            onResultado(creado)
         }
     }
 

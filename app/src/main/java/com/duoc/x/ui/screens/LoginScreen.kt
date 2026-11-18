@@ -244,13 +244,15 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Enlace inferior: Crear cuenta (Autocompleta credenciales de prueba al tocarlo)
         Box(
             modifier = Modifier
                 .heightIn(min = 44.dp)
                 .clickable {
-                    viewModel.onCorreoChange("estudiante.derecho@duocuc.cl")
-                    viewModel.onClaveChange("duoc2025")
+                    viewModel.registrarUsuario(estado.correo, estado.clave) { creado ->
+                        if (creado) {
+                            onLoginSuccess(estado.correo)
+                        }
+                    }
                 },
             contentAlignment = Alignment.Center
         ) {

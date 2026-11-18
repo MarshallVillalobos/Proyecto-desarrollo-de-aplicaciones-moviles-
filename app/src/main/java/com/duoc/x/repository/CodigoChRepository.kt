@@ -122,6 +122,58 @@ class CodigoChRepository(context: Context) {
         }
     }
 
+    suspend fun registrarUsuario(
+        estadoActual: LoginUiState,
+        correo: String,
+        clave: String
+    ): Pair<LoginUiState, Boolean> {
+        val (estadoValidado, esValido) = validarFormulario(estadoActual, correo, clave)
+        if (!esValido) {
+            return Pair(estadoValidado, false)
+        }
+
+        return try {
+            val respExistentes = RetrofitInstance.api.obtenerUsuarios()
+            if (respExistentes.isSuccessful) {
+                val correoYaExiste = respExistentes.body().orEmpty().any { usuario ->
+                    usuario.correo.equals(correo.trim(), ignoreCase = true)
+                }
+                if (correoYaExiste) {
+                    val estadoDuplicado = estadoValidado.copy(
+                        errores = estadoValidado.errores.copy(
+                            correo = "Este correo ya se encuentra registrado"
+                        )
+                    )
+                    return Pair(estadoDuplicado, false)
+                }
+            }
+
+            val nuevoUsuario = LoginRequest(
+                correo = correo.trim(),
+                clave = clave
+            )
+            val respuesta = RetrofitInstance.api.registrarUsuario(nuevoUsuario)
+
+            if (respuesta.isSuccessful) {
+                Pair(estadoValidado, true)
+            } else {
+                val estadoConError = estadoValidado.copy(
+                    errores = estadoValidado.errores.copy(
+                        clave = "No se pudo crear la cuenta (Error ${respuesta.code()})"
+                    )
+                )
+                Pair(estadoConError, false)
+            }
+        } catch (e: Exception) {
+            val estadoConError = estadoValidado.copy(
+                errores = estadoValidado.errores.copy(
+                    clave = "No se pudo conectar con Xano"
+                )
+            )
+            Pair(estadoConError, false)
+        }
+    }
+
     // =========================================================================
     // 2. GESTIÓN DE ESTUDIO, LECTURA Y NOTAS (EstudioViewModel)
     // =========================================================================
