@@ -1,6 +1,6 @@
 package com.duoc.x.remote
 
-import com.duoc.x.model.LoginRequest
+import com.duoc.x.model.*
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -13,4 +13,11 @@ interface ApiService {
 
     @POST("loginrequest")
     suspend fun registrarUsuario(@Body request: LoginRequest): Response<LoginRequest>
+
+    @GET("norma")
+    suspend fun obtenerNormas(): Response<List<NormaItem>>
+
+    @GET("articulo")
+    suspend fun obtenerArticulos(): Response<List<ArticuloItem>>
+
 }

@@ -4,22 +4,20 @@ import com.google.gson.annotations.SerializedName
 
 // Modelo para cada ley o código en la pantalla de Normas
 data class NormaItem(
-    val id: String,
-    val titulo: String,
-    val descripcion: String,
-    val categoria: String
+    @SerializedName("codigo_id")
+    val id: String = "",
+    val titulo: String = "",
+    val descripcion: String = "",
+    val categoria: String = ""
 )
 
 data class ArticuloItem(
-    val id: String,
-    @SerializedName("norma_id")
-    val normaId: String = "",
-    @SerializedName("norma_titulo")
+    @SerializedName("codigo_id")
+    val id: String = "",
     val normaTitulo: String = "",
-    val numero: String,
-    val extracto: String,
-    val contenido: String,
-    @SerializedName("es_destacado")
+    val numero: String = "",
+    val extracto: String = "",
+    val contenido: String = "",
     val esDestacado: Boolean = false,
     val nota: String = ""
 ) {

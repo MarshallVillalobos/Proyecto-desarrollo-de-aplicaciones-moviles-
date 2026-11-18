@@ -2,12 +2,15 @@ package com.duoc.x.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.duoc.x.model.ArticuloItem
 import com.duoc.x.model.EstudioUiState
 import com.duoc.x.repository.CodigoChRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class EstudioViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -17,11 +20,18 @@ class EstudioViewModel(application: Application) : AndroidViewModel(application)
     val estado: StateFlow<EstudioUiState> = _estado.asStateFlow()
 
     init {
-        _estado.value = repository.cargarDatosPersistentes(_estado.value)
+        cargarDatosPersistentes()
+    }
+
+    fun cargarDatosPersistentes() {
+        viewModelScope.launch {
+            val estadoActualizado = repository.cargarDatosPersistentes(_estado.value)
+            _estado.update { estadoActualizado }
+        }
     }
 
     fun registrarSesionActiva(correo: String) {
-        _estado.value = repository.registrarSesionActiva(_estado.value, correo)
+        _estado.update { repository.registrarSesionActiva(it, correo) }
     }
 
     fun cerrarSesion() {
@@ -30,37 +40,36 @@ class EstudioViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Acciones para NormasScreen ---
     fun onSearchQueryChange(nuevaBusqueda: String) {
-        _estado.value = repository.actualizarBusqueda(_estado.value, nuevaBusqueda)
+        _estado.update { repository.actualizarBusqueda(it, nuevaBusqueda) }
     }
 
     fun onCategoriaSelected(categoria: String) {
-        _estado.value = repository.seleccionarCategoria(_estado.value, categoria)
+        _estado.update { repository.seleccionarCategoria(it, categoria) }
     }
 
     // --- Acciones para LecturaScreen y PerfilScreen ---
     fun aumentarFuente() {
-        _estado.value = repository.aumentarFuente(_estado.value)
+        _estado.update { repository.aumentarFuente(it) }
     }
 
     fun disminuirFuente() {
-        _estado.value = repository.disminuirFuente(_estado.value)
+        _estado.update { repository.disminuirFuente(it) }
     }
 
     fun cambiarFuenteDirecto(nuevoTamano: Int) {
-        _estado.value = repository.cambiarFuenteDirecto(_estado.value, nuevoTamano)
+        _estado.update { repository.cambiarFuenteDirecto(it, nuevoTamano) }
     }
 
     fun alternarDestacado(normaTitulo: String, articuloNumero: String) {
-        _estado.value = repository.alternarDestacado(_estado.value, normaTitulo, articuloNumero)
+        _estado.update { repository.alternarDestacado(it, normaTitulo, articuloNumero) }
     }
 
-    // --- Acciones para NuevaNotaScreen y MisEstudiosScreen ---
     fun prepararBorradorNota(normaTitulo: String, articuloNumero: String) {
-        _estado.value = repository.prepararBorradorNota(_estado.value, normaTitulo, articuloNumero)
+        _estado.update { repository.prepararBorradorNota(it, normaTitulo, articuloNumero) }
     }
 
     fun onBorradorNotaChange(nuevoTexto: String) {
-        _estado.value = repository.actualizarBorradorNota(_estado.value, nuevoTexto)
+        _estado.update { repository.actualizarBorradorNota(it, nuevoTexto) }
     }
 
     fun validarYGuardarNota(normaTitulo: String, articuloNumero: String): Boolean {
@@ -69,15 +78,15 @@ class EstudioViewModel(application: Application) : AndroidViewModel(application)
             normaTitulo = normaTitulo,
             articuloNumero = articuloNumero
         )
-        _estado.value = nuevoEstado
+        _estado.update { nuevoEstado }
         return guardado
     }
 
     fun eliminarNota(articuloId: String) {
-        _estado.value = repository.eliminarNota(_estado.value, articuloId)
+        _estado.update { repository.eliminarNota(it, articuloId) }
     }
 
-    fun obtenerArticulo(normaTitulo: String, articuloNumero: String): ArticuloItem? {
+    fun obtenerArticulos(normaTitulo: String, articuloNumero: String): ArticuloItem? {
         return repository.obtenerArticulo(_estado.value, normaTitulo, articuloNumero)
     }
 }
