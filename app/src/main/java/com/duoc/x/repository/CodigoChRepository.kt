@@ -7,6 +7,7 @@ import com.duoc.x.data.AppDatabase
 import com.duoc.x.data.ArticuloEstudioEntity
 import com.duoc.x.data.UsuarioEntity
 import com.duoc.x.model.ArticuloItem
+import com.duoc.x.model.DevUiState
 import com.duoc.x.model.EstudioUiState
 import com.duoc.x.model.LoginErrores
 import com.duoc.x.model.LoginRequest
@@ -427,7 +428,7 @@ class CodigoChRepository(context: Context) {
     }
 
     // =========================================================================
-    // 4. CATÁLOGO DE DATOS (Reemplazar por Retrofit / Xano al crear endpoints)
+    // 4. CATÁLOGO DE DATOS
     // =========================================================================
 
     private suspend fun obtenerNormas(): List<NormaItem> {
@@ -453,6 +454,238 @@ class CodigoChRepository(context: Context) {
             }
         } catch (e: Exception) {
             emptyList()
+        }
+    }
+
+// =========================================================================
+// 5. DevScreen
+// =========================================================================
+
+    suspend fun cargarDatosDev(estadoActual: DevUiState): DevUiState {
+        return try {
+            val respUsuarios = RetrofitInstance.api.obtenerUsuarios()
+            val respArticulos = RetrofitInstance.api.obtenerArticulos()
+
+            estadoActual.copy(
+                usuarios = if (respUsuarios.isSuccessful) respUsuarios.body().orEmpty() else estadoActual.usuarios,
+                articulos = if (respArticulos.isSuccessful) respArticulos.body().orEmpty() else estadoActual.articulos,
+                cargando = false
+            )
+        } catch (e: Exception) {
+            estadoActual.copy(
+                cargando = false,
+                mensajeFeedback = "Error al conectar con Xano: ${e.localizedMessage}",
+                esError = true
+            )
+        }
+    }
+
+    suspend fun eliminarUsuarioXano(estadoActual: DevUiState, usuarioId: Int): DevUiState {
+        return try {
+            val respuesta = RetrofitInstance.api.eliminarUsuario(usuarioId)
+            if (respuesta.isSuccessful) {
+                val listaActualizada = estadoActual.usuarios.filterNot { it.id == usuarioId }
+                estadoActual.copy(
+                    usuarios = listaActualizada,
+                    mensajeFeedback = "Usuario #$usuarioId eliminado de Xano",
+                    esError = false
+                )
+            } else {
+                estadoActual.copy(
+                    mensajeFeedback = "Error al eliminar usuario (${respuesta.code()})",
+                    esError = true
+                )
+            }
+        } catch (e: Exception) {
+            estadoActual.copy(
+                mensajeFeedback = "Error de red: ${e.localizedMessage}",
+                esError = true
+            )
+        }
+    }
+
+    fun actualizarFormularioNuevoArticulo(
+        estadoActual: DevUiState,
+        codigoId: String = estadoActual.nuevoCodigoId,
+        normaTitulo: String = estadoActual.nuevaNormaTitulo,
+        numero: String = estadoActual.nuevoNumero,
+        extracto: String = estadoActual.nuevoExtracto,
+        contenido: String = estadoActual.nuevoContenido
+    ): DevUiState {
+        return estadoActual.copy(
+            nuevoCodigoId = codigoId,
+            nuevaNormaTitulo = normaTitulo,
+            nuevoNumero = numero,
+            nuevoExtracto = extracto,
+            nuevoContenido = contenido,
+            mensajeFeedback = null
+        )
+    }
+
+    suspend fun crearArticuloXano(estadoActual: DevUiState): DevUiState {
+        if (estadoActual.nuevoNumero.isBlank() || estadoActual.nuevoContenido.isBlank()) {
+            return estadoActual.copy(
+                mensajeFeedback = "Completa al menos el número y contenido del artículo",
+                esError = true
+            )
+        }
+
+        val nuevoArticulo = ArticuloItem(
+            id = estadoActual.nuevoCodigoId.ifBlank { "art_${System.currentTimeMillis()}" },
+            normaTitulo = estadoActual.nuevaNormaTitulo.trim(),
+            numero = estadoActual.nuevoNumero.trim(),
+            extracto = estadoActual.nuevoExtracto.ifBlank { estadoActual.nuevoContenido.take(90) }.trim(),
+            contenido = estadoActual.nuevoContenido.trim(),
+            esDestacado = false,
+            nota = ""
+        )
+
+        return try {
+            val respuesta = RetrofitInstance.api.crearArticulo(nuevoArticulo)
+            if (respuesta.isSuccessful) {
+                val creado = respuesta.body()
+                val nuevaLista = if (creado != null) estadoActual.articulos + creado else estadoActual.articulos
+                estadoActual.copy(
+                    articulos = nuevaLista,
+                    nuevoCodigoId = "",
+                    nuevoNumero = "",
+                    nuevoExtracto = "",
+                    nuevoContenido = "",
+                    mensajeFeedback = "Artículo ${nuevoArticulo.numero} creado en Xano",
+                    esError = false
+                )
+            } else {
+                estadoActual.copy(
+                    mensajeFeedback = "Error al crear artículo (${respuesta.code()})",
+                    esError = true
+                )
+            }
+        } catch (e: Exception) {
+            estadoActual.copy(
+                mensajeFeedback = "Error de red: ${e.localizedMessage}",
+                esError = true
+            )
+        }
+    }
+
+    fun seleccionarArticuloParaEditar(estadoActual: DevUiState, articulo: ArticuloItem): DevUiState {
+        return estadoActual.copy(
+            articuloEditandoXanoId = articulo.xanoId,
+            editNormaTitulo = articulo.normaTitulo,
+            editNumero = articulo.numero,
+            editExtracto = articulo.extracto,
+            editContenido = articulo.contenido,
+            mensajeFeedback = null
+        )
+    }
+
+    fun actualizarFormularioEdicionArticulo(
+        estadoActual: DevUiState,
+        normaTitulo: String = estadoActual.editNormaTitulo,
+        numero: String = estadoActual.editNumero,
+        extracto: String = estadoActual.editExtracto,
+        contenido: String = estadoActual.editContenido
+    ): DevUiState {
+        return estadoActual.copy(
+            editNormaTitulo = normaTitulo,
+            editNumero = numero,
+            editExtracto = extracto,
+            editContenido = contenido,
+            mensajeFeedback = null
+        )
+    }
+
+    suspend fun modificarArticuloXano(estadoActual: DevUiState): DevUiState {
+        val xanoId = estadoActual.articuloEditandoXanoId ?: return estadoActual.copy(
+            mensajeFeedback = "Selecciona un artículo de la lista para modificarlo",
+            esError = true
+        )
+
+        val original = estadoActual.articulos.find { it.xanoId == xanoId } ?: return estadoActual
+
+        val actualizado = original.copy(
+            normaTitulo = estadoActual.editNormaTitulo.trim(),
+            numero = estadoActual.editNumero.trim(),
+            extracto = estadoActual.editExtracto.trim(),
+            contenido = estadoActual.editContenido.trim()
+        )
+
+        return try {
+            val respuesta = RetrofitInstance.api.actualizarArticulo(xanoId, actualizado)
+            if (respuesta.isSuccessful) {
+                val itemServidor = respuesta.body() ?: actualizado
+                val listaActualizada = estadoActual.articulos.map {
+                    if (it.xanoId == xanoId) itemServidor else it
+                }
+                estadoActual.copy(
+                    articulos = listaActualizada,
+                    articuloEditandoXanoId = null,
+                    editNormaTitulo = "",
+                    editNumero = "",
+                    editExtracto = "",
+                    editContenido = "",
+                    mensajeFeedback = "Artículo ${itemServidor.numero} actualizado en Xano",
+                    esError = false
+                )
+            } else {
+                estadoActual.copy(
+                    mensajeFeedback = "Error al modificar artículo (${respuesta.code()})",
+                    esError = true
+                )
+            }
+        } catch (e: Exception) {
+            estadoActual.copy(
+                mensajeFeedback = "Error de red: ${e.localizedMessage}",
+                esError = true
+            )
+        }
+    }
+
+    suspend fun consultarArticulosXano(estadoActual: DevUiState): DevUiState {
+        return try {
+            val respuesta = RetrofitInstance.api.obtenerArticulos()
+            if (respuesta.isSuccessful) {
+                val lista = respuesta.body().orEmpty()
+                estadoActual.copy(
+                    articulos = lista,
+                    mensajeFeedback = "GET articulo: ${lista.size} registros cargados desde Xano",
+                    esError = false
+                )
+            } else {
+                estadoActual.copy(
+                    mensajeFeedback = "Error al consultar artículos (${respuesta.code()})",
+                    esError = true
+                )
+            }
+        } catch (e: Exception) {
+            estadoActual.copy(
+                mensajeFeedback = "Error de red: ${e.localizedMessage}",
+                esError = true
+            )
+        }
+    }
+
+    suspend fun eliminarArticuloXano(estadoActual: DevUiState, articuloXanoId: Int): DevUiState {
+        return try {
+            val respuesta = RetrofitInstance.api.eliminarArticulo(articuloXanoId)
+            if (respuesta.isSuccessful) {
+                val listaActualizada = estadoActual.articulos.filterNot { it.xanoId == articuloXanoId }
+                estadoActual.copy(
+                    articulos = listaActualizada,
+                    mensajeFeedback = "Artículo #$articuloXanoId eliminado de Xano",
+                    esError = false
+                )
+            } else {
+                estadoActual.copy(
+                    mensajeFeedback = "Error al eliminar artículo (${respuesta.code()})",
+                    esError = true
+                )
+            }
+        } catch (e: Exception) {
+            estadoActual.copy(
+                mensajeFeedback = "Error de red: ${e.localizedMessage}",
+                esError = true
+            )
         }
     }
 
