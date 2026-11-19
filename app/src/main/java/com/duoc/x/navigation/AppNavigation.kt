@@ -22,12 +22,20 @@ fun AppNavigation() {
         // 1. Pantalla Login
         composable(route = Screen.Login.route) {
             LoginScreen(
-                onLoginSuccess = { correoIngresado ->
-                    estudioViewModel.registrarSesionActiva(correoIngresado)
+                onLoginSuccess = { correo ->
+                    estudioViewModel.registrarSesionActiva(correo)
                     navController.navigate(Screen.Normas.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
+                },
+                onDevClick = {
+                    navController.navigate(Screen.Dev.route)
                 }
+            )
+        }
+        composable(Screen.Dev.route) {
+            DevScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
 
@@ -177,5 +185,6 @@ fun AppNavigation() {
                 }
             )
         }
+
     }
 }

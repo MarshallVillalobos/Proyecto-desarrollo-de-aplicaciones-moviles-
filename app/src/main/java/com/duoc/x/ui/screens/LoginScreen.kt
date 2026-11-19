@@ -16,6 +16,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -36,6 +37,7 @@ import com.duoc.x.viewmodel.LoginViewModel
 @Composable
 fun LoginScreen(
     onLoginSuccess: (String) -> Unit,
+    onDevClick: () -> Unit = {},
     viewModel: LoginViewModel = viewModel()
 ) {
     // Observamos el estado reactivo desde el LoginViewModel
@@ -53,7 +55,9 @@ fun LoginScreen(
         Surface(
             modifier = Modifier
                 .size(84.dp)
-                .shadow(elevation = 8.dp, shape = RoundedCornerShape(22.dp)),
+                .shadow(elevation = 8.dp, shape = RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(22.dp))
+                .clickable { onDevClick() },
             shape = RoundedCornerShape(22.dp),
             color = PrimaryNavy
         ) {

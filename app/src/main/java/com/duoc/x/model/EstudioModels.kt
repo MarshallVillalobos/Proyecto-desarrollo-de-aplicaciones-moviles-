@@ -12,6 +12,8 @@ data class NormaItem(
 )
 
 data class ArticuloItem(
+    @SerializedName("id")
+    val xanoId: Int? = null,
     @SerializedName("codigo_id")
     val id: String = "",
     val normaTitulo: String = "",

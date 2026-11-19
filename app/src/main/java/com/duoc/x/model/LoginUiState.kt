@@ -13,6 +13,7 @@ data class LoginErrores(
 )
 
 data class LoginRequest(
+    val id: Int? = null,
     val correo: String = "",
     val clave: String = ""
 )

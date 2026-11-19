@@ -6,6 +6,8 @@ sealed class Screen(val route: String) {
     data object MisEstudios : Screen("mis_estudios")
     data object Perfil : Screen("perfil")
 
+    data object Dev : Screen("dev")
+
     // Rutas que reciben parámetros (ID de la norma o ID del artículo)
     data object Articulos : Screen("articulos/{normaNombre}") {
         fun createRoute(normaNombre: String) = "articulos/$normaNombre"
