@@ -27,8 +27,18 @@ android {
 
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("codigo_ch_release.jks")
+            storePassword = "123456"
+            keyAlias = "key_codigo_ch"
+            keyPassword = "123456"
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             optimization {
                 enable = false
             }
